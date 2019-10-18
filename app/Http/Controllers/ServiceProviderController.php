@@ -7,38 +7,66 @@ use App\Service_Provider;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\ImageController;
 
 class ServiceProviderController extends Controller
 {
     public function showAll() {
-        $service = Service_Provider::all();
-
-        $res["status"] = true;
-        $res["message"] = "All service provider";
-        $res["data"] = $service;
-        return response()->json($res, 200);
+        $res = array();
+        
+        if (Auth::check()) {
+           $user = Auth::user();
+           $role = $user->role_id;
+            
+           if ($role === 1 || role === 2) {
+            $service = Service_Provider::all();
+            $res["status"] = 200;
+            $res["message"] = "All service provider";
+            $res["data"] = $service;
+               
+           } else {
+               $res['status'] = 401;
+               $res['message'] = "You must login as a resident";
+           }
+       } else {
+        $res['status'] = 401;
+        $res['message'] = "You are not logged in";
+       }
+        return response()->json($res, $res['status']);
     }
 
     public function show($id)
     {
-        $service = Service_Provider::find($id);
-        if($service){
-            $res["status"] = fasle;
+        $res = array();
+        
+        if (Auth::check()) {
+           $user = Auth::user();
+           $role = $user->role_id;
+            
+           if ($role === 1 || role === 2) {
+            $service = Service_Provider::find($id);
+            $res["status"] = 200;
             $res["message"] = "One service provider";
             $res["data"] = $service;
-            return response()->json($res, 200);
-        }else{
-
-            $res["status"] = fasle;
-            $res["message"] = "Not found";
-            return response()->json($res, 404);
-        }
+               
+           } else {
+               $res['status'] = 401;
+               $res['message'] = "You must login as a resident";
+           }
+       } else {
+        $res['status'] = 401;
+        $res['message'] = "You are not logged in";
+       }
+        return response()->json($res, $res['status']);
     }
 
     public function byCategory($category_id) {
         $res = array();
         
-        try {
+        if (Auth::check()) {
+            $user = Auth::user();
+            $role = $user->role_id;
+            if ($role === 1 || role === 2) {
             $services = Service_Provider::where('category_id', $category_id);
             
             
@@ -48,8 +76,8 @@ class ServiceProviderController extends Controller
                 $res['data'] = $services;
                 
             } else {    
-                $res['status'] = 404;
-                $res['message'] = "No service providers in this category";
+                $res['status'] = 401;
+                $res['message'] = "You are not logged in";
             }
         } catch(Exception $e) {
             $res['status'] = 501;
@@ -67,6 +95,7 @@ class ServiceProviderController extends Controller
                'description' => 'required',
                'image' => 'required',
                'estate_id' => 'required|int'
+               'category_id' => 'required|int'
           ]);
 
         if ($validator->fails()) {
@@ -105,7 +134,8 @@ class ServiceProviderController extends Controller
            'phone'       => 'required',
            'description' => 'required',
            'image'       => 'required',
-           'estate_id'   => 'required|int'
+           'estate_id'   => 'required|int',
+           'category_id' => 'required|int'
       ]);
 
         if ($validator->fails()) {
@@ -120,6 +150,7 @@ class ServiceProviderController extends Controller
             $service->description = $request->input("description");
             $service->image       = $request->input("image");
             $service->estate_id   = $request->input("estate_id");
+            $service->category_id = $request->input("category_id");
             $service->save();
 
              //if operation was successful save commit save to database
@@ -139,7 +170,6 @@ class ServiceProviderController extends Controller
         }
     }
 
-
     public function destroy($id)
     {
         $service = Service_Provider::destroy($id);
@@ -154,5 +184,14 @@ class ServiceProviderController extends Controller
             return response()->json($res, 501);
         }
     }
+
+    // public function upload(Request $request, ImageController $image) {
+    //     $this->validate($request, [
+    //      'image' => "image|max:4000|required",
+    //     ]);
+        
+    //     $res = $image->imageUpload($request);
+    //     return response()->json($res, $res['status_code']);
+    // }
 
 }
